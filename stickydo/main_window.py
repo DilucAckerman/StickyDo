@@ -7,10 +7,9 @@ from gi.repository import Gtk, Gtk4LayerShell as LayerShell
 from stickydo.theme import WINDOW_RADIUS
 from datetime import date
 from stickydo.db import (
-    get_all_notes, add_note, update_note_content,delete_note,
-    get_all_todos, add_todo, toggle_todo_done, delete_todo
+    get_all_notes, add_note, update_note_content, delete_note,
+    get_all_todos, add_todo, toggle_todo_done, delete_todo, update_todo_time
 )
-
 
 def create_main_window(app):
     win = Gtk.ApplicationWindow(application=app)
@@ -270,34 +269,65 @@ def build_todos_page():
     box.set_margin_start(14)
     box.set_margin_end(14)
 
-    # --- Entry row: text box + date picker button + Add ---
     entry_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
     entry = Gtk.Entry()
     entry.set_hexpand(True)
     entry.set_placeholder_text("New task...")
 
-    selected_date = {"value": None}  # holds chosen due date as "YYYY-MM-DD" or None
+    selected_time = {"start": None, "end": None}
 
-    calendar_icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "calendar.png")
-    calendar_image = Gtk.Image.new_from_file(calendar_icon_path)
-    calendar_image.set_pixel_size(24)
-    date_button = Gtk.MenuButton()
-    date_button.set_child(calendar_image)
-    calendar = Gtk.Calendar()
+    clock_icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "clock.png")
+    time_icon = Gtk.Image.new_from_file(clock_icon_path)
+    time_icon.set_pixel_size(24)
+    time_button = Gtk.MenuButton()
+    time_button.set_child(time_icon)
+
+    # --- Time picker popover ---
     popover = Gtk.Popover()
-    popover.set_child(calendar)
-    date_button.set_popover(popover)
+    picker_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+    picker_box.set_margin_top(10)
+    picker_box.set_margin_bottom(10)
+    picker_box.set_margin_start(10)
+    picker_box.set_margin_end(10)
 
-    def on_date_selected(cal):
-        gdate = cal.get_date()
-        selected_date["value"] = gdate.format("%Y-%m-%d")
+    def make_time_row(label_text):
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        label = Gtk.Label(label=label_text)
+        label.set_size_request(40, -1)
+        label.set_xalign(0)
+        hour = Gtk.SpinButton.new_with_range(0, 23, 1)
+        hour.set_value(9)
+        minute = Gtk.SpinButton.new_with_range(0, 55, 5)
+        minute.set_value(0)
+        row.append(label)
+        row.append(hour)
+        row.append(Gtk.Label(label=":"))
+        row.append(minute)
+        return row, hour, minute
+
+    start_row, start_hour, start_minute = make_time_row("Start")
+    end_row, end_hour, end_minute = make_time_row("End")
+
+    confirm_btn = Gtk.Button(label="Set")
+
+    def on_confirm(btn):
+        s = f"{int(start_hour.get_value()):02d}:{int(start_minute.get_value()):02d}"
+        e = f"{int(end_hour.get_value()):02d}:{int(end_minute.get_value()):02d}"
+        selected_time["start"] = s
+        selected_time["end"] = e
         popover.popdown()
 
-    calendar.connect("day-selected", on_date_selected)
+    confirm_btn.connect("clicked", on_confirm)
+
+    picker_box.append(start_row)
+    picker_box.append(end_row)
+    picker_box.append(confirm_btn)
+    popover.set_child(picker_box)
+    time_button.set_popover(popover)
 
     add_button = Gtk.Button(label="Add")
     entry_row.append(entry)
-    entry_row.append(date_button)
+    entry_row.append(time_button)
     entry_row.append(add_button)
     box.append(entry_row)
 
@@ -314,19 +344,15 @@ def build_todos_page():
             listbox.remove(child)
             child = nxt
 
-        today_str = date.today().isoformat()
-
-        for todo_id, task, done, due_date in get_all_todos():
+        for todo_id, task, done, start_time, end_time in get_all_todos():
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
             checkmark_icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "checkmark.png")
-
             checkbox = Gtk.ToggleButton()
             checkbox.add_css_class("custom-checkbox")
             checkbox.set_active(bool(done))
-
             check_image = Gtk.Image.new_from_file(checkmark_icon_path)
-            check_image.set_pixel_size(20)
+            check_image.set_pixel_size(18)
             check_image.set_opacity(1.0 if done else 0.0)
             checkbox.set_child(check_image)
 
@@ -336,7 +362,6 @@ def build_todos_page():
                 refresh_list()
             checkbox.connect("toggled", on_toggle)
 
-            # Task text + due date stacked vertically in one cell
             text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             label = Gtk.Label(label=task)
             label.set_hexpand(True)
@@ -345,14 +370,11 @@ def build_todos_page():
                 label.set_opacity(0.5)
             text_box.append(label)
 
-            if due_date:
-                date_label = Gtk.Label(label=due_date)
-                date_label.add_css_class("caption")
-                date_label.set_xalign(0)
-                date_label.add_css_class("caption")
-                if not done and due_date < today_str:
-                    date_label.add_css_class("error")  # GTK's built-in red styling
-                text_box.append(date_label)
+            if start_time and end_time:
+                time_label = Gtk.Label(label=f"{start_time} - {end_time}")
+                time_label.set_xalign(0)
+                time_label.add_css_class("caption")
+                text_box.append(time_label)
 
             delete_button = Gtk.Button(label="✕")
             def on_delete(btn, tid=todo_id):
@@ -368,9 +390,10 @@ def build_todos_page():
     def on_add_clicked(btn):
         task = entry.get_text().strip()
         if task:
-            add_todo(task, selected_date["value"])
+            add_todo(task, selected_time["start"], selected_time["end"])
             entry.set_text("")
-            selected_date["value"] = None
+            selected_time["start"] = None
+            selected_time["end"] = None
             refresh_list()
 
     add_button.connect("clicked", on_add_clicked)

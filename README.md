@@ -2,6 +2,8 @@
 
 A native sticky notes + to-do list panel for Wayland desktops, built with Python, GTK4, and `gtk4-layer-shell`. Instead of behaving like a normal application window, StickyDo renders as a desktop-native panel — sitting above your wallpaper and below your other windows — and is fully movable, resizable, translucent, and blurred, all implemented from scratch on top of the Wayland layer-shell protocol.
 
+![Demo](docs/demo.gif)
+
 ![Notes tab](docs/screenshot-notes.png)
 ![Todos tab](docs/screenshot-todos.png)
 
@@ -14,8 +16,8 @@ Most sticky-note apps on Linux are either X11-only or behave like ordinary float
 ## Features
 
 - **Notes** — create, edit, and delete freeform notes; auto-saves on every keystroke, no save button needed
-- **Todos** — add tasks with optional due dates, mark complete, delete; overdue tasks are highlighted
-- **Single unified panel** — one movable, resizable window with a Notes/Todos tab switcher, rather than a scattered pile of separate windows
+- **Todos** — add tasks with optional time ranges (start/end); mark complete, delete- 
+-**Single unified panel** — one movable, resizable window with a Notes/Todos tab switcher, rather than a scattered pile of separate windows
 - **Desktop-native rendering** — sits above the wallpaper, below other application windows, via Wayland layer-shell
 - **Custom drag-to-move and drag-to-resize** — built manually with GTK gesture controllers, since layer-shell windows have no OS-provided title bar or resize border
 - **Translucent, blurred UI** — CSS-based glass theming with compositor-level background blur (Hyprland `layerrule`)

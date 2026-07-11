@@ -5,7 +5,7 @@ DB_DIR = os.path.expanduser("~/.local/share/stickydo")
 DB_PATH = os.path.join(DB_DIR, "stickydo.db")
 
 def get_connection():
-    os.makedirs(DB_DIR, exist_ok = True)
+    os.makedirs(DB_DIR, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS notes (
@@ -26,6 +26,14 @@ def get_connection():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Migration: add start_time/end_time columns if this DB predates them
+    existing_cols = [row[1] for row in conn.execute("PRAGMA table_info(todos)").fetchall()]
+    if "start_time" not in existing_cols:
+        conn.execute("ALTER TABLE todos ADD COLUMN start_time TEXT")
+    if "end_time" not in existing_cols:
+        conn.execute("ALTER TABLE todos ADD COLUMN end_time TEXT")
+
     conn.commit()
     return conn
 
@@ -61,25 +69,29 @@ def delete_note(note_id):
 
 # ---- Todos CRUD ----
 
-def add_todo(task, due_date=None):
+def add_todo(task, start_time=None, end_time=None):
     conn = get_connection()
     cur = conn.execute(
-        "INSERT INTO todos (task, due_date) VALUES (?, ?)", (task, due_date)
+        "INSERT INTO todos (task, start_time, end_time) VALUES (?, ?, ?)",
+        (task, start_time, end_time)
     )
     conn.commit()
     todo_id = cur.lastrowid
     conn.close()
     return todo_id
     
-def update_todo_due_date(todo_id, due_date):
+def update_todo_time(todo_id, start_time, end_time):
     conn = get_connection()
-    conn.execute("UPDATE todos SET due_date = ? WHERE id = ?", (due_date, todo_id))
+    conn.execute(
+        "UPDATE todos SET start_time = ?, end_time = ? WHERE id = ?",
+        (start_time, end_time, todo_id)
+    )
     conn.commit()
     conn.close()
 
 def get_all_todos():
     conn = get_connection()
-    rows = conn.execute("SELECT id,task,done,due_date FROM todos").fetchall()
+    rows = conn.execute("SELECT id, task, done, start_time, end_time FROM todos").fetchall()
     conn.close()
     return rows
 

@@ -89,9 +89,12 @@ button.close-btn:hover {{
 }}
 
 button.custom-checkbox {{
-    min-width: 22px;
-    min-height: 22px;
-    ...
+    min-width: 25px;
+    min-height: 25px;
+    padding: 5px;
+    border: 1.5px solid rgba(255, 255, 255, {DIVIDER_OPACITY + 0.15});
+    border-radius: 10px;
+    background: transparent;
 }}
 
 /* ---- Entry fields ---- */
