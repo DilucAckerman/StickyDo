@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=StickyDo
+Comment=Sticky notes and to-do list panel for Wayland
+Exec=__PROJECT_DIR__/run.sh
+Icon=stickydo
+Terminal=false
+Categories=Utility;
+StartupWMClass=com.stickydo.app
