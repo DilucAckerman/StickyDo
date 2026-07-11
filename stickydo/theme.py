@@ -6,6 +6,7 @@ TILE_OPACITY = 0.14       # kept HIGHER than WINDOW_OPACITY so tiles stand out
 DIVIDER_OPACITY = 0.25   # thin white separator lines
 HOVER_OPACITY = 0.10
 BASE_FONT_SIZE = "16px"  # try 15px or 16px if 14 still feels small
+WINDOW_RADIUS = 30  # px — also drives the resize handle's curve
 
 FONT_STACK = '"Sulphur Point", "Comfortaa", "Quicksand", sans-serif'
 
@@ -14,7 +15,7 @@ def build_css():
     return f"""
 window {{
     background-color: rgba({WINDOW_TINT}, {WINDOW_OPACITY});
-    border-radius: 20px;
+    border-radius: {WINDOW_RADIUS}px;
     color: #f5f2f6;
     font-family: {FONT_STACK};
     font-size: {BASE_FONT_SIZE};

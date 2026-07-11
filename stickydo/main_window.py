@@ -1,8 +1,10 @@
 import gi
 import os
+import cairo
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gtk4LayerShell', '1.0')
 from gi.repository import Gtk, Gtk4LayerShell as LayerShell
+from stickydo.theme import WINDOW_RADIUS
 from datetime import date
 from stickydo.db import (
     get_all_notes, add_note, update_note_content,delete_note,
@@ -106,13 +108,26 @@ def create_main_window(app):
     stack.add_titled(todos_page, "todos", "Todos")
 
     # ---------------- Resize handle ----------------
-    resize_handle = Gtk.Label(label="◢")
-    resize_handle.add_css_class("resize-handle")
+   
+
+    def draw_resize_corner(area, cr, width, height):
+        pad = 4  # room for the rounded cap to render without clipping
+        radius = min(WINDOW_RADIUS, width - pad, height - pad)
+
+        cr.set_line_width(4)
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)
+        cr.set_source_rgba(1, 1, 1, 0.4)
+        cr.arc(pad, pad, radius, 0, 1.5708)
+        cr.stroke()
+
+    resize_handle = Gtk.DrawingArea()
+    resize_handle.set_content_width(WINDOW_RADIUS+6)
+    resize_handle.set_content_height(WINDOW_RADIUS+6)
+    resize_handle.set_draw_func(draw_resize_corner)
     resize_handle.set_halign(Gtk.Align.END)
     resize_handle.set_valign(Gtk.Align.END)
     resize_handle.set_margin_end(4)
     resize_handle.set_margin_bottom(4)
-
     resize_gesture = Gtk.GestureDrag()
 
     def on_resize_update(gesture, offset_x, offset_y):
@@ -143,8 +158,8 @@ def build_notes_page():
 
     list_box_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     list_box_container.set_margin_top(6)
-    list_box_container.set_margin_start(6)
-    list_box_container.set_margin_end(6)
+    list_box_container.set_margin_start(14)
+    list_box_container.set_margin_end(14)
 
     add_btn = Gtk.Button(label="+ New Note")
     list_box_container.append(add_btn)
@@ -157,8 +172,8 @@ def build_notes_page():
 
     editor_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     editor_container.set_margin_top(6)
-    editor_container.set_margin_start(6)
-    editor_container.set_margin_end(6)
+    editor_container.set_margin_start(14)
+    editor_container.set_margin_end(14)
 
     back_btn = Gtk.Button(label="← Back")
     editor_container.append(back_btn)
@@ -251,8 +266,9 @@ def build_notes_page():
 def build_todos_page():
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     box.set_margin_top(6)
-    box.set_margin_start(6)
-    box.set_margin_end(6)
+    box.set_margin_bottom(14)
+    box.set_margin_start(14)
+    box.set_margin_end(14)
 
     # --- Entry row: text box + date picker button + Add ---
     entry_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
