@@ -1,20 +1,23 @@
 # Central place to tune StickyDo's look. Change a number, restart the app.
 
+WINDOW_TINT = "48, 42, 58" 
 WINDOW_OPACITY = 0.45     # 0 = fully see-through, 1 = fully solid
 TILE_OPACITY = 0.14       # kept HIGHER than WINDOW_OPACITY so tiles stand out
-DIVIDER_OPACITY = 0.25    # thin white separator lines
+DIVIDER_OPACITY = 0.25   # thin white separator lines
 HOVER_OPACITY = 0.10
+BASE_FONT_SIZE = "16px"  # try 15px or 16px if 14 still feels small
 
-FONT_STACK = '"Sulfur Point", "Comfortaa", "Quicksand", sans-serif'
+FONT_STACK = '"Sulphur Point", "Comfortaa", "Quicksand", sans-serif'
 
 
 def build_css():
     return f"""
 window {{
-    background-color: rgba(20, 18, 24, {WINDOW_OPACITY});
-    border-radius: 14px;
+    background-color: rgba({WINDOW_TINT}, {WINDOW_OPACITY});
+    border-radius: 20px;
     color: #f5f2f6;
     font-family: {FONT_STACK};
+    font-size: {BASE_FONT_SIZE};
 }}
 
 /* ---- Nav bar ---- */
@@ -45,38 +48,55 @@ stackswitcher button:checked {{
     color: #ffffff;
 }}
 
-/* ---- Close button ---- */
-button.close-btn {{
-    background: transparent;
-    color: rgba(245, 242, 246, 0.5);
-    border-radius: 6px;
-    padding: 2px 8px;
-}}
-
-button.close-btn:hover {{
-    background-color: rgba(224, 95, 111, 0.5);
-    color: #ffffff;
-}}
-
-/* ---- General buttons act as tiles too ---- */
 button {{
-    background-color: rgba(255, 255, 255, {TILE_OPACITY});
-    border-radius: 8px;
-    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, {DIVIDER_OPACITY});
+    border-radius: 10px;
+    padding: 5px 12px;
+    color: rgba(245, 242, 246, 0.75);
 }}
 
 button:hover {{
-    background-color: rgba(255, 255, 255, {TILE_OPACITY + HOVER_OPACITY});
+    background-color: rgba(255, 255, 255, {HOVER_OPACITY});
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #ffffff;
+}}
+
+button.tab-btn {{
+    background: transparent;
+    border: none;
+    padding: 4px 14px;
+    color: rgba(245, 242, 246, 0.55);
+}}
+
+button.tab-btn:hover {{
+    background: transparent;
+    border: none;
+    color: #ffffff;
+}}
+
+button.close-btn {{
+    background: transparent;
+    border: none;
+    color: rgba(245, 242, 246, 0.5);
 }}
 
 button.close-btn:hover {{
-    background-color: rgba(224, 95, 111, 0.5);
+    background-color: rgba(224, 95, 111, 0.35);
+    border: none;
+    color: #ffffff;
+}}
+
+button.custom-checkbox {{
+    min-width: 22px;
+    min-height: 22px;
+    ...
 }}
 
 /* ---- Entry fields ---- */
 entry {{
     background-color: rgba(255, 255, 255, {TILE_OPACITY});
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 6px 10px;
     border: 1px solid rgba(255, 255, 255, {DIVIDER_OPACITY});
     color: #f5f2f6;
@@ -89,9 +109,13 @@ entry:focus-within {{
 /* ---- Note / todo tiles ---- */
 row {{
     background-color: rgba(255, 255, 255, {TILE_OPACITY});
-    border-radius: 10px;
+    border-radius: 14px;
     padding: 8px;
     margin: 4px 10px;
+}}
+
+row label {{
+    font-size: 15px;
 }}
 
 row:hover {{
@@ -115,5 +139,28 @@ label.resize-handle {{
 scrolledwindow, viewport, list, stack {{
     background: transparent;
     background-color: transparent;
+}}
+
+textview, textview text {{
+    background-color: transparent;
+    color: #f5f2f6;
+    caret-color: #f5f2f6;
+}}
+
+button.tab-btn {{
+    background: transparent;
+    padding: 4px 14px;
+    color: rgba(245, 242, 246, 0.55);
+}}
+
+button.tab-btn:checked {{
+    background: transparent;
+    color: #ffffff;
+}}
+
+separator.tab-divider {{
+    background-color: rgba(255, 255, 255, {DIVIDER_OPACITY});
+    min-width: 2px;
+    margin: 2px 10px;
 }}
 """

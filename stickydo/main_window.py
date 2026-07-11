@@ -1,10 +1,11 @@
 import gi
+import os
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gtk4LayerShell', '1.0')
 from gi.repository import Gtk, Gtk4LayerShell as LayerShell
 from datetime import date
 from stickydo.db import (
-    get_all_notes, add_note, update_note_content,
+    get_all_notes, add_note, update_note_content,delete_note,
     get_all_todos, add_todo, toggle_todo_done, delete_todo
 )
 
@@ -38,8 +39,33 @@ def create_main_window(app):
 
     stack = Gtk.Stack()
     stack.set_vexpand(True)
-    switcher = Gtk.StackSwitcher()
-    switcher.set_stack(stack)
+
+    notes_btn = Gtk.ToggleButton(label="Notes")
+    todos_btn = Gtk.ToggleButton(label="Todos")
+    notes_btn.add_css_class("tab-btn")
+    todos_btn.add_css_class("tab-btn")
+    notes_btn.set_active(True)
+
+    tab_separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+    tab_separator.add_css_class("tab-divider")
+
+    def on_notes_toggled(btn):
+        if btn.get_active():
+            todos_btn.set_active(False)
+            stack.set_visible_child_name("notes")
+
+    def on_todos_toggled(btn):
+        if btn.get_active():
+            notes_btn.set_active(False)
+            stack.set_visible_child_name("todos")
+
+    notes_btn.connect("toggled", on_notes_toggled)
+    todos_btn.connect("toggled", on_todos_toggled)
+
+    switcher = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+    switcher.append(notes_btn)
+    switcher.append(tab_separator)
+    switcher.append(todos_btn)
 
     close_button = Gtk.Button(label="✕")
     close_button.add_css_class("close-btn")
@@ -159,15 +185,27 @@ def build_notes_page():
         for note_id, content, color, x, y in get_all_notes():
             preview = (content[:30] + "...") if len(content) > 30 else content
             preview = preview or "(empty note)"
+
+            row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             row_label = Gtk.Label(label=preview)
             row_label.set_xalign(0)
+            row_label.set_hexpand(True)
             row_label.set_margin_top(4)
             row_label.set_margin_bottom(4)
             row_label.set_margin_start(6)
 
+            delete_btn = Gtk.Button(label="✕")
+            def on_delete(btn, nid=note_id):
+                delete_note(nid)
+                refresh_notes_list()
+            delete_btn.connect("clicked", on_delete)
+
+            row_box.append(row_label)
+            row_box.append(delete_btn)
+
             row = Gtk.ListBoxRow()
-            row.set_child(row_label)
-            row.note_id = note_id  # stash id directly on the row widget
+            row.set_child(row_box)
+            row.note_id = note_id
             listbox.append(row)
 
     def open_editor(note_id, content):
@@ -224,16 +262,19 @@ def build_todos_page():
 
     selected_date = {"value": None}  # holds chosen due date as "YYYY-MM-DD" or None
 
-    date_button = Gtk.MenuButton(label="📅")
+    calendar_icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "calendar.png")
+    calendar_image = Gtk.Image.new_from_file(calendar_icon_path)
+    calendar_image.set_pixel_size(24)
+    date_button = Gtk.MenuButton()
+    date_button.set_child(calendar_image)
     calendar = Gtk.Calendar()
     popover = Gtk.Popover()
     popover.set_child(calendar)
     date_button.set_popover(popover)
 
     def on_date_selected(cal):
-        gdate = cal.get_date()  # GLib.DateTime
+        gdate = cal.get_date()
         selected_date["value"] = gdate.format("%Y-%m-%d")
-        date_button.set_label(selected_date["value"])
         popover.popdown()
 
     calendar.connect("day-selected", on_date_selected)
@@ -262,11 +303,20 @@ def build_todos_page():
         for todo_id, task, done, due_date in get_all_todos():
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
-            checkbox = Gtk.CheckButton()
+            checkmark_icon_path = os.path.join(os.path.dirname(__file__), "assets", "icons", "checkmark.png")
+
+            checkbox = Gtk.ToggleButton()
+            checkbox.add_css_class("custom-checkbox")
             checkbox.set_active(bool(done))
 
-            def on_toggle(cb, tid=todo_id):
+            check_image = Gtk.Image.new_from_file(checkmark_icon_path)
+            check_image.set_pixel_size(20)
+            check_image.set_opacity(1.0 if done else 0.0)
+            checkbox.set_child(check_image)
+
+            def on_toggle(cb, tid=todo_id, img=check_image):
                 toggle_todo_done(tid)
+                img.set_opacity(1.0 if cb.get_active() else 0.0)
                 refresh_list()
             checkbox.connect("toggled", on_toggle)
 
@@ -305,7 +355,6 @@ def build_todos_page():
             add_todo(task, selected_date["value"])
             entry.set_text("")
             selected_date["value"] = None
-            date_button.set_label("📅")
             refresh_list()
 
     add_button.connect("clicked", on_add_clicked)
