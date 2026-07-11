@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gtk4LayerShell', '1.0')
 from gi.repository import Gtk, Gtk4LayerShell as LayerShell
-
+from datetime import date
 from stickydo.db import (
     get_all_notes, add_note, update_note_content,
     get_all_todos, add_todo, toggle_todo_done, delete_todo
@@ -15,6 +15,7 @@ def create_main_window(app):
     win.set_default_size(300, 400)
 
     LayerShell.init_for_window(win)
+    LayerShell.set_namespace(win, "stickydo")
     LayerShell.set_layer(win, LayerShell.Layer.BOTTOM)
     LayerShell.set_anchor(win, LayerShell.Edge.TOP, True)
     LayerShell.set_anchor(win, LayerShell.Edge.LEFT, True)
@@ -29,6 +30,7 @@ def create_main_window(app):
 
     # ---------------- Nav bar ----------------
     navbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+    navbar.add_css_class("navbar")
     navbar.set_margin_top(6)
     navbar.set_margin_bottom(6)
     navbar.set_margin_start(6)
@@ -40,6 +42,7 @@ def create_main_window(app):
     switcher.set_stack(stack)
 
     close_button = Gtk.Button(label="✕")
+    close_button.add_css_class("close-btn")
     close_button.connect("clicked", lambda b: win.close())
 
     navbar.append(switcher)
@@ -78,6 +81,7 @@ def create_main_window(app):
 
     # ---------------- Resize handle ----------------
     resize_handle = Gtk.Label(label="◢")
+    resize_handle.add_css_class("resize-handle")
     resize_handle.set_halign(Gtk.Align.END)
     resize_handle.set_valign(Gtk.Align.END)
     resize_handle.set_margin_end(4)
@@ -205,18 +209,38 @@ def build_notes_page():
 
 # ==================== Todos page ====================
 
+
 def build_todos_page():
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
     box.set_margin_top(6)
     box.set_margin_start(6)
     box.set_margin_end(6)
 
+    # --- Entry row: text box + date picker button + Add ---
     entry_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
     entry = Gtk.Entry()
     entry.set_hexpand(True)
     entry.set_placeholder_text("New task...")
+
+    selected_date = {"value": None}  # holds chosen due date as "YYYY-MM-DD" or None
+
+    date_button = Gtk.MenuButton(label="📅")
+    calendar = Gtk.Calendar()
+    popover = Gtk.Popover()
+    popover.set_child(calendar)
+    date_button.set_popover(popover)
+
+    def on_date_selected(cal):
+        gdate = cal.get_date()  # GLib.DateTime
+        selected_date["value"] = gdate.format("%Y-%m-%d")
+        date_button.set_label(selected_date["value"])
+        popover.popdown()
+
+    calendar.connect("day-selected", on_date_selected)
+
     add_button = Gtk.Button(label="Add")
     entry_row.append(entry)
+    entry_row.append(date_button)
     entry_row.append(add_button)
     box.append(entry_row)
 
@@ -233,8 +257,11 @@ def build_todos_page():
             listbox.remove(child)
             child = nxt
 
+        today_str = date.today().isoformat()
+
         for todo_id, task, done, due_date in get_all_todos():
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+
             checkbox = Gtk.CheckButton()
             checkbox.set_active(bool(done))
 
@@ -243,11 +270,23 @@ def build_todos_page():
                 refresh_list()
             checkbox.connect("toggled", on_toggle)
 
+            # Task text + due date stacked vertically in one cell
+            text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             label = Gtk.Label(label=task)
             label.set_hexpand(True)
             label.set_xalign(0)
             if done:
                 label.set_opacity(0.5)
+            text_box.append(label)
+
+            if due_date:
+                date_label = Gtk.Label(label=due_date)
+                date_label.add_css_class("caption")
+                date_label.set_xalign(0)
+                date_label.add_css_class("caption")
+                if not done and due_date < today_str:
+                    date_label.add_css_class("error")  # GTK's built-in red styling
+                text_box.append(date_label)
 
             delete_button = Gtk.Button(label="✕")
             def on_delete(btn, tid=todo_id):
@@ -256,15 +295,17 @@ def build_todos_page():
             delete_button.connect("clicked", on_delete)
 
             row.append(checkbox)
-            row.append(label)
+            row.append(text_box)
             row.append(delete_button)
             listbox.append(row)
 
     def on_add_clicked(btn):
         task = entry.get_text().strip()
         if task:
-            add_todo(task)
+            add_todo(task, selected_date["value"])
             entry.set_text("")
+            selected_date["value"] = None
+            date_button.set_label("📅")
             refresh_list()
 
     add_button.connect("clicked", on_add_clicked)

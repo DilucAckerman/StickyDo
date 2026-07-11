@@ -61,13 +61,21 @@ def delete_note(note_id):
 
 # ---- Todos CRUD ----
 
-def add_todo(task):
+def add_todo(task, due_date=None):
     conn = get_connection()
-    cur = conn.execute("INSERT INTO todos (task) VALUES (?)",(task,))
+    cur = conn.execute(
+        "INSERT INTO todos (task, due_date) VALUES (?, ?)", (task, due_date)
+    )
     conn.commit()
     todo_id = cur.lastrowid
     conn.close()
     return todo_id
+    
+def update_todo_due_date(todo_id, due_date):
+    conn = get_connection()
+    conn.execute("UPDATE todos SET due_date = ? WHERE id = ?", (due_date, todo_id))
+    conn.commit()
+    conn.close()
 
 def get_all_todos():
     conn = get_connection()
