@@ -134,6 +134,4 @@ The project deliberately separates concerns: `db.py` is the only file that touch
 - [ ] Task editing (currently delete-and-recreate only)
 - [ ] Multiple panel instances / pinned notes
 
-## License
 
-MIT (or your preferred license — add a `LICENSE` file to match)
