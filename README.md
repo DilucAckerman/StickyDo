@@ -7,8 +7,6 @@ A native sticky notes + to-do list panel for Wayland desktops, built with Python
 ![Notes tab](docs/screenshot-notes.png)
 ![Todos tab](docs/screenshot-todos.png)
 
-> Screenshots go in a `docs/` folder — replace the paths above once added.
-
 ## Why
 
 Most sticky-note apps on Linux are either X11-only or behave like ordinary floating windows. StickyDo is built specifically for the modern Wayland/Hyprland stack: it uses `wlr-layer-shell` (the same protocol behind bars and launchers like waybar and wofi) to sit natively on the desktop, with custom-built drag-to-move and drag-to-resize since layer-shell surfaces have no window manager chrome by default.
